@@ -1,57 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:inter_test/presentations/popup/loading_popup.dart';
-import 'add_product_controller.dart';
+import '../controller/add_product_controller.dart';
 
-class AddProductScreen extends StatefulWidget {
+
+class AddProductScreen extends GetView<AddProductController> {
   const AddProductScreen({super.key});
-
-  @override
-  State<AddProductScreen> createState() => _AddProductScreenState();
-}
-
-class _AddProductScreenState extends State<AddProductScreen> {
-  final AddProductController _addProductController =
-      Get.put(AddProductController());
-
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
-  final TextEditingController _quantityController = TextEditingController();
-  final TextEditingController _coverController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _addProductController.statusCreate.listen((status) {
-      if (status == StatusCreate.success) {
-        LoadingPopup.hideLoadingDialog(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Add product success"),
-          ),
-        );
-        Get.back();
-      } else if (status == StatusCreate.failure) {
-        LoadingPopup.hideLoadingDialog(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Add failure"),
-          ),
-        );
-      } else if (status == StatusCreate.inProcess) {
-        LoadingPopup.showLoadingDialog(context);
-      } else if (status == StatusCreate.initial) {
-        LoadingPopup.hideLoadingDialog(context);
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Add Screens',
+          'Thêm mới sản phẩm',
           style: TextStyle(fontSize: 27, fontWeight: FontWeight.w700),
         ),
       ),
@@ -63,7 +22,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             children: [
               const SizedBox(height: 20),
               TextField(
-                controller: _nameController,
+                controller: controller.nameController,
                 decoration: InputDecoration(
                   labelText: 'Product Name',
                   enabledBorder: OutlineInputBorder(
@@ -80,7 +39,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
               const SizedBox(height: 25),
               TextField(
-                controller: _priceController,
+                controller: controller.priceController,
                 decoration: InputDecoration(
                   labelText: 'Price',
                   enabledBorder: OutlineInputBorder(
@@ -98,7 +57,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
               const SizedBox(height: 25),
               TextField(
-                controller: _quantityController,
+                controller: controller.quantityController,
                 decoration: InputDecoration(
                   labelText: 'Quantity',
                   enabledBorder: OutlineInputBorder(
@@ -116,7 +75,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
               const SizedBox(height: 25),
               TextField(
-                controller: _coverController,
+                controller: controller.coverController,
                 decoration: InputDecoration(
                   labelText: 'Cover URL',
                   enabledBorder: OutlineInputBorder(
@@ -135,18 +94,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               Center(
                 child: ElevatedButton(
                   onPressed: () {
-                    try {
-                      final name = _nameController.text;
-                      final quantity = int.parse(_quantityController.text);
-                      final price = int.parse(_priceController.text);
-                      final coverUrl = _coverController.text;
-                      _addProductController.createProduct(
-                        name: name,
-                        quantity: quantity,
-                        price: price,
-                        coverUrl: coverUrl,
-                      );
-                    } catch (e) {}
+                    controller.submitProduct();
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(

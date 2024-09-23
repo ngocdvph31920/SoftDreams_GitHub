@@ -1,45 +1,17 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:inter_test/presentations/popup/loading_popup.dart';
-import 'package:inter_test/presentations/screens/home/home_controller.dart';
-import 'cart_controller.dart';
 
-class CartScreen extends StatefulWidget {
+import '../controller/cart_controller.dart';
+
+class CartScreen extends GetView<CartController> {
   const CartScreen({super.key});
-
-  @override
-  State<CartScreen> createState() => _CartScreenState();
-}
-
-class _CartScreenState extends State<CartScreen> {
-  final _homeController = Get.find<HomeController>();
-  final _cartController = Get.put(CartController());
-
-  @override
-  void initState() {
-    super.initState();
-    _cartController.fetchTotalPriceProduct();
-
-    _cartController.statusDelete.listen((status) {
-      if (status == StatusDelete.deleteSuccess) {
-        LoadingPopup.hideLoadingDialog(context);
-        _homeController.fetchProducts();
-        _cartController.fetchTotalPriceProduct();
-      } else if (status == StatusDelete.inProcess) {
-        LoadingPopup.showLoadingDialog(context);
-      } else if (status == StatusDelete.initial) {
-        LoadingPopup.hideLoadingDialog(context);
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Added Products',
+          'Giỏ hàng',
           style: TextStyle(fontSize: 27, fontWeight: FontWeight.w700),
         ),
       ),
@@ -48,9 +20,9 @@ class _CartScreenState extends State<CartScreen> {
           Expanded(
             child: Obx(() {
               return ListView.builder(
-                itemCount: _homeController.listProductsCart.length,
+                itemCount: controller.homeController.listProductsCart.length,
                 itemBuilder: (context, index) {
-                  final product = _homeController.listProductsCart[index];
+                  final product =  controller.homeController.listProductsCart[index];
                   return Card(
                     margin:
                         const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
@@ -101,7 +73,7 @@ class _CartScreenState extends State<CartScreen> {
                           size: 30,
                         ),
                         onPressed: () {
-                          _cartController.removeProductInCart(product);
+                          controller.removeProductInCart(product);
                         },
                       ),
                     ),
@@ -118,7 +90,7 @@ class _CartScreenState extends State<CartScreen> {
               color: Colors.grey.shade200,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Text(
-                'Total: \$${_cartController.totalPrice}',
+                'Total: \$${controller.totalPrice}',
                 style: const TextStyle(
                   color: Colors.red,
                   fontWeight: FontWeight.w800,

@@ -1,11 +1,11 @@
 import 'dart:convert';
-
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import 'package:inter_test/model/product.dart';
 import 'package:inter_test/service/hive_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../popup/loading_popup.dart';
 
 enum DetailStatus {
   initial,
@@ -17,6 +17,45 @@ enum DetailStatus {
 class DetailController extends GetxController {
   var status = DetailStatus.initial.obs;
   final Dio dio = Dio();
+
+  late Product product;
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController priceController = TextEditingController();
+  final TextEditingController quantityController = TextEditingController();
+  final TextEditingController coverUrlController = TextEditingController();
+
+  @override
+  void onInit() {
+    super.onInit();
+
+    // Nhận đối tượng product từ arguments
+    product = Get.arguments as Product;
+
+    nameController.text = product.name;
+    priceController.text = product.price.toString();
+    quantityController.text = product.quantity.toString();
+    coverUrlController.text = product.cover;
+
+    ever(status, (DetailStatus status) {
+      if (status == DetailStatus.success) {
+        LoadingPopup.hideLoadingDialog(Get.context!);
+        Get.back();
+      } else if (status == DetailStatus.inProcess) {
+        LoadingPopup.showLoadingDialog(Get.context!);
+      } else if (status == DetailStatus.initial) {
+        LoadingPopup.hideLoadingDialog(Get.context!);
+        Get.back();
+      } else if (status == DetailStatus.failure) {
+        LoadingPopup.hideLoadingDialog(Get.context!);
+        ScaffoldMessenger.of(Get.context!).showSnackBar(
+          const SnackBar(
+            content: Text("Error server"),
+          ),
+        );
+        Get.back();
+      }
+    });
+  }
 
   Future<void> createProduct({
     required String name,
@@ -46,7 +85,6 @@ class DetailController extends GetxController {
       );
 
       Map<String, dynamic> jsonMap = json.decode(response.toString());
-
       bool success = jsonMap['success'];
 
       if (success) {
@@ -73,9 +111,10 @@ class DetailController extends GetxController {
           },
         ),
       );
-      Map<String, dynamic> jsonMap = json.decode(response.toString());
 
+      Map<String, dynamic> jsonMap = json.decode(response.toString());
       bool success = jsonMap['success'];
+
       if (success) {
         status.value = DetailStatus.success;
       } else {
@@ -104,6 +143,7 @@ class DetailController extends GetxController {
       status.value = DetailStatus.inProcess;
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString("accessToken");
+
       final response = await dio.put(
         'https://training-api-unrp.onrender.com/products/$productId',
         data: {
@@ -119,8 +159,8 @@ class DetailController extends GetxController {
           },
         ),
       );
-      Map<String, dynamic> jsonMap = json.decode(response.toString());
 
+      Map<String, dynamic> jsonMap = json.decode(response.toString());
       bool success = jsonMap['success'];
 
       if (success) {
