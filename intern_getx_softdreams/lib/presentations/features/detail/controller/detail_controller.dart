@@ -3,8 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:inter_test/model/product.dart';
-import 'package:inter_test/service/hive_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../service/hive_service_master.dart';
 import '../../../popup/loading_popup.dart';
 
 enum DetailStatus {
@@ -17,6 +17,7 @@ enum DetailStatus {
 class DetailController extends GetxController {
   var status = DetailStatus.initial.obs;
   final Dio dio = Dio();
+  final HiveService hiveService = Get.find();
 
   late Product product;
   final TextEditingController nameController = TextEditingController();
@@ -128,7 +129,7 @@ class DetailController extends GetxController {
   Future<void> deleteProductFromList(Product product) async {
     status.value = DetailStatus.inProcess;
 
-    HiveService.deleteProduct(product);
+    hiveService.deleteProduct(product);
     await deleteProduct(product.id);
   }
 

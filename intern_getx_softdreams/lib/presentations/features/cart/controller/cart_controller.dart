@@ -1,9 +1,8 @@
 import 'package:get/get.dart';
 import 'package:inter_test/model/product.dart';
-import 'package:inter_test/service/hive_service.dart';
 import 'package:inter_test/presentations/popup/loading_popup.dart';
-import 'package:flutter/material.dart';
 import 'package:inter_test/presentations/features/home/controller/home_controller.dart';
+import 'package:inter_test/service/hive_service_master.dart';
 
 enum StatusDelete {
   initial,
@@ -15,6 +14,7 @@ class CartController extends GetxController {
   RxDouble totalPrice = 0.0.obs;
   var statusDelete = StatusDelete.initial.obs;
   final homeController = Get.find<HomeController>();
+  final HiveService hiveService = Get.find();
 
   @override
   void onInit() {
@@ -40,14 +40,14 @@ class CartController extends GetxController {
 
   Future<void> removeProductInCart(Product product) async {
     statusDelete.value = StatusDelete.inProcess;
-    await HiveService.deleteProduct(product);
+    await hiveService.deleteProduct(product);
     statusDelete.value = StatusDelete.deleteSuccess;
   }
 
   Future<void> fetchTotalPriceProduct() async {
     print("ngocdv tong tien $totalPrice");
     statusDelete.value = StatusDelete.initial;
-    final listProductCart = await HiveService.getProducts();
+    final listProductCart = await hiveService.getProducts();
 
     totalPrice.value =
         listProductCart.fold(0.0, (sum, product) => sum + product.price);

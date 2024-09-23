@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:inter_test/service/api_service.dart';
+
+import 'hive_service_master.dart';
 
 class ApiServices {
   final Dio dio = Dio(
@@ -14,10 +15,11 @@ class ApiServices {
 class HeaderInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+
     options.headers.addAll(
       {
         'Content-Type': 'application/json',
-        //'Authorization': HiveService.getToken(),
+        'Authorization': HiveService.getToken(),
       },
     );
     super.onRequest(options, handler);

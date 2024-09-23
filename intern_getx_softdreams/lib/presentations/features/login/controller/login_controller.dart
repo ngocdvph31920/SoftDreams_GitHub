@@ -1,11 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get/get.dart';
-import 'package:dio/dio.dart';
 
+import '../../../../service/hive_service_master.dart';
 import '../../../popup/loading_popup.dart';
+import '../model/login_request.dart';
+import '../repository/login_repo.dart';
 
 enum StatusLogin {
   initial,
@@ -25,7 +25,8 @@ class LoginController extends GetxController {
   final accountFocusNode = FocusNode();
   final passwordFocusNode = FocusNode();
   var statusLogin = StatusLogin.initial.obs;
-  final dio = Dio();
+  final LoginRepo loginRepo = Get.find();
+  final HiveService hiveService = Get.find();
 
   Future<void> authentication() async {
     statusLogin.value = StatusLogin.inProcess;
@@ -45,34 +46,25 @@ class LoginController extends GetxController {
     required String passWord,
   }) async {
     statusLogin.value = StatusLogin.inProcess;
+
+    LoginRequest loginRequest = LoginRequest(
+      taxCode: taxCode,
+      userName: userName,
+      password: passWord,
+    );
+
     try {
-      final response = await dio.post(
-        'https://training-api-unrp.onrender.com/login',
-        data: jsonEncode({
-          "tax_code": taxCode,
-          "user_name": userName,
-          "password": passWord,
-        }),
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        ),
-      );
-      print('NgocDV okokokokok response = $response');
+      statusLogin.value = StatusLogin.inProcess;
+      final loginResponse = await loginRepo.login(loginRequest);
+      if (loginResponse.success) {
 
-      Map<String, dynamic> jsonMap = json.decode(response.toString());
-
-      bool success = jsonMap['success'];
-      String message = jsonMap['message'];
-      String token = jsonMap['token'];
-
-      if (success) {
-        final SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString("accessToken", token);
-
-        //save user vào hive
-
+        await hiveService.setLoggedIn(true);
+        if (loginResponse.token != null) {
+          await hiveService.saveToken(loginResponse.token!);
+        }
+        hiveService.saveTaxCode('$taxCode');
+        hiveService.saveAccount(userName);
+        hiveService.savePassword(passWord);
         statusLogin.value = StatusLogin.loginSuccess;
       } else {
         statusLogin.value = StatusLogin.loginFailure;
@@ -89,33 +81,6 @@ class LoginController extends GetxController {
         userName: accountController.text.trim(),
         passWord: passwordController.text.trim(),
       );
-      ever(statusLogin, (status) {
-        if (status == StatusLogin.loginSuccess) {
-          Get.snackbar(
-            'Đăng nhập thành công',
-            'Bạn đã đăng nhập thành công.',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-          );
-        } else if (status == StatusLogin.loginFailure) {
-          Get.snackbar(
-            'Đăng nhập thất bại',
-            'Tên đăng nhập hoặc mật khẩu không chính xác.',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
-          );
-        }
-      });
-    } else {
-      Get.snackbar(
-        'Lỗi xác thực',
-        'Vui lòng kiểm tra lại thông tin.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-      );
     }
   }
 
@@ -129,9 +94,23 @@ class LoginController extends GetxController {
       if (buildContext == null) return;
       if (status == StatusLogin.loginSuccess) {
         LoadingPopup.hideLoadingDialog(buildContext);
+        Get.snackbar(
+          'Đăng nhập thành công',
+          'Bạn đã đăng nhập thành công.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
         Get.toNamed('/home');
       } else if (status == StatusLogin.loginFailure) {
         LoadingPopup.hideLoadingDialog(buildContext);
+        Get.snackbar(
+          'Đăng nhập thất bại',
+          'Tên đăng nhập hoặc mật khẩu không chính xác.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
       } else if (status == StatusLogin.inProcess) {
         LoadingPopup.showLoadingDialog(buildContext);
       } else if (status == StatusLogin.initial) {

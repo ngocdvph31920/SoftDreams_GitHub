@@ -2,11 +2,12 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:inter_test/model/product.dart';
-import 'package:inter_test/service/hive_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:inter_test/presentations/popup/loading_popup.dart';
 import 'package:inter_test/presentations/features/login/screen/login_screen.dart';
+
+import '../../../../service/hive_service_master.dart';
 
 enum StatusGetList {
   initial,
@@ -20,6 +21,7 @@ class HomeController extends GetxController {
   RxList<Product> listProducts = <Product>[].obs;
   RxDouble totalPrice = 0.0.obs;
   var statusGetList = StatusGetList.initial.obs;
+  final HiveService hiveService = Get.find();
 
   final Dio dio = Dio();
 
@@ -65,10 +67,10 @@ class HomeController extends GetxController {
 
     if (existingProduct != null) return;
 
-    final listProductCart = await HiveService.getProducts();
+    final listProductCart = await hiveService.getProducts();
     listProductCart.add(product);
 
-    await HiveService.saveProducts(listProductCart);
+    await hiveService.saveProducts(listProductCart);
 
     fetchProducts();
   }
@@ -76,7 +78,7 @@ class HomeController extends GetxController {
   Future<void> fetchProducts() async {
     statusGetList.value = StatusGetList.initial;
 
-    final listProductCart = await HiveService.getProducts();
+    final listProductCart = await hiveService.getProducts();
     listProductsCart.value = listProductCart;
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
