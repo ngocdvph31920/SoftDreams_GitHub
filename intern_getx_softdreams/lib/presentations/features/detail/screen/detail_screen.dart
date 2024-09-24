@@ -1,14 +1,20 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controller/detail_controller.dart';
 
+import '../../../../model/product.dart';
+import '../controller/detail_controller.dart';
 
 class DetailScreen extends GetView<DetailController> {
   const DetailScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final Product? product = controller.product.value;
+    if (product == null) {
+      return Container();
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -25,9 +31,9 @@ class DetailScreen extends GetView<DetailController> {
               width: double.infinity,
               height: 200,
               child: CachedNetworkImage(
-                imageUrl: controller.product.cover,
+                imageUrl: product.cover,
                 placeholder: (context, url) =>
-                const CircularProgressIndicator(),
+                    const CircularProgressIndicator(),
                 errorWidget: (context, url, error) => const Icon(Icons.error),
               ),
             ),
@@ -36,7 +42,7 @@ class DetailScreen extends GetView<DetailController> {
               child: Column(
                 children: [
                   Text(
-                    controller.product.name,
+                    product.name,
                     style: const TextStyle(
                       fontSize: 25,
                       fontWeight: FontWeight.w500,
@@ -44,7 +50,7 @@ class DetailScreen extends GetView<DetailController> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    'Giá: \$${controller.product.price}',
+                    'Giá: \$${product.price}',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w400,
@@ -53,7 +59,7 @@ class DetailScreen extends GetView<DetailController> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    'Số Lượng: ${controller.product.quantity}',
+                    'Số Lượng: ${product.quantity}',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w400,
@@ -149,14 +155,7 @@ class DetailScreen extends GetView<DetailController> {
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    controller.updateProduct(
-                      productId: controller.product.id,
-                      name: controller.nameController.text,
-                      price: int.parse(controller.priceController.text),
-                      quantity: int.parse(controller.quantityController.text),
-                      coverUrl: controller.coverUrlController.text,
-                    );
-                    // Note: The action to pop back is handled inside the controller
+                    controller.updateProduct();
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
@@ -193,11 +192,16 @@ class DetailScreen extends GetView<DetailController> {
                               child: const Text('Hủy'),
                             ),
                             TextButton(
-                              onPressed: () {
-                                controller.deleteProductFromList(controller.product);
-                                Get.back();
-                                // Closing the screen after deleting the product
-                                Get.back();
+                              onPressed: () async {
+                                final result =
+                                    await controller.deleteProduct(product.id);
+
+                                if (result == true) {
+                                  Navigator.pop(context);
+                                  Navigator.pop(context);
+                                } else {
+                                  Navigator.pop(context);
+                                }
                               },
                               child: const Text('Xóa'),
                             ),

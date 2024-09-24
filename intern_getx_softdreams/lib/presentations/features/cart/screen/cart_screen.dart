@@ -20,9 +20,9 @@ class CartScreen extends GetView<CartController> {
           Expanded(
             child: Obx(() {
               return ListView.builder(
-                itemCount: controller.homeController.listProductsCart.length,
+                itemCount: controller.homeController.productList.length,
                 itemBuilder: (context, index) {
-                  final product =  controller.homeController.listProductsCart[index];
+                  final product =  controller.homeController.productList[index];
                   return Card(
                     margin:
                         const EdgeInsets.symmetric(vertical: 8, horizontal: 10),

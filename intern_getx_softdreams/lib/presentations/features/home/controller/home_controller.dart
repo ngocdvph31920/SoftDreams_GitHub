@@ -1,129 +1,89 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:get/get.dart';
-import 'package:inter_test/model/product.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:inter_test/presentations/popup/loading_popup.dart';
-import 'package:inter_test/presentations/features/login/screen/login_screen.dart';
-
+import 'package:get/get.dart';
+import '../../../../model/product.dart';
 import '../../../../service/hive_service_master.dart';
-
-enum StatusGetList {
-  initial,
-  inProcess,
-  failure,
-  success,
-}
+import '../model/list_product_request.dart';
+import '../repository/list_product_repo.dart';
 
 class HomeController extends GetxController {
-  RxList<Product> listProductsCart = <Product>[].obs;
-  RxList<Product> listProducts = <Product>[].obs;
-  RxDouble totalPrice = 0.0.obs;
-  var statusGetList = StatusGetList.initial.obs;
-  final HiveService hiveService = Get.find();
-
-  final Dio dio = Dio();
+  final ListProductRepo homeRepo = Get.find();
+  final isLoading = false.obs;
+  final productList = <Product>[].obs;
+  int currentPage = 1;
+  final ScrollController scrollController = ScrollController();
 
   @override
   void onInit() {
     super.onInit();
     fetchProducts();
-    monitorStatus();
+    scrollController.addListener(_scrollListener);
   }
 
-  void monitorStatus() {
-    statusGetList.listen((status) {
-      final BuildContext? context = Get.context;
-      if (context == null) return;
-
-      if (status == StatusGetList.success) {
-        LoadingPopup.hideLoadingDialog(context);
-      } else if (status == StatusGetList.failure) {
-        LoadingPopup.hideLoadingDialog(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("GetList failure"),
-          ),
-        );
-      } else if (status == StatusGetList.inProcess) {
-        LoadingPopup.showLoadingDialog(context);
-      } else if (status == StatusGetList.initial) {
-        LoadingPopup.hideLoadingDialog(context);
-      }
-    });
+  @override
+  void onClose() {
+    scrollController.removeListener(_scrollListener);
+    super.onClose();
   }
 
-  void totalPriceProduct() {
-    totalPrice.value =
-        listProductsCart.fold(0.0, (sum, product) => sum + product.price);
-    totalPrice.value = double.parse(totalPrice.toStringAsFixed(2));
-  }
-
-  Future<void> addProductToCart(Product product) async {
-    Product? existingProduct = listProductsCart.firstWhereOrNull(
-          (p) => p.id == product.id,
-    );
-
-    if (existingProduct != null) return;
-
-    final listProductCart = await hiveService.getProducts();
-    listProductCart.add(product);
-
-    await hiveService.saveProducts(listProductCart);
-
-    fetchProducts();
-  }
-
-  Future<void> fetchProducts() async {
-    statusGetList.value = StatusGetList.initial;
-
-    final listProductCart = await hiveService.getProducts();
-    listProductsCart.value = listProductCart;
-
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final accessToken = prefs.getString("accessToken");
-
-    var headers = {
-      'Authorization': '$accessToken',
-      'Content-Type': 'application/json',
-    };
-
-    try {
-      final response = await dio.get(
-        'https://training-api-unrp.onrender.com/products',
-        queryParameters: {
-          'page': 1,
-          'size': 100,
-        },
-        options: Options(
-          headers: headers,
-          validateStatus: (status) {
-            return status! < 500;
-          },
-        ),
-      );
-      Map<String, dynamic> jsonMap = json.decode(response.toString());
-
-      bool success = jsonMap['success'];
-      if (success) {
-        List<Product> productList = (response.data['data'] as List)
-            .map((productJson) => Product.fromJson(productJson))
-            .toList();
-        listProducts.value = productList;
-        statusGetList.value = StatusGetList.success;
-      } else {
-        statusGetList.value = StatusGetList.failure;
-      }
-    } catch (e) {
-      statusGetList.value = StatusGetList.failure;
+  void _scrollListener() {
+    if (scrollController.position.pixels >=
+        scrollController.position.maxScrollExtent - 400) {
+      loadMore();
     }
   }
 
   Future<void> logout() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove("accessToken");
-    Get.offAll(() => const LoginScreen());
+    await HiveService.setLoggedIn(false);
+    Get.offAllNamed('/login');
+  }
+
+  Future<void> fetchProducts({bool isLoadMore = false}) async {
+    if (isLoading.value) return;
+    try {
+      isLoading.value = true;
+      int tempPage = isLoadMore ? currentPage + 1 : 1;
+      final response = await homeRepo.getListProduct(
+        ListProductRequest(page: tempPage, limit: 10),
+      );
+
+      if (response.success && response.data.isNotEmpty) {
+        if (isLoadMore) {
+          productList.addAll(response.data);
+          currentPage = tempPage;
+        } else {
+          productList.assignAll(response.data);
+          currentPage = 1;
+        }
+      }
+    } on DioException catch (e) {
+      print("Lỗi: ${e.response?.statusCode} - ${e.response?.statusMessage}");
+    } catch (e) {
+      print("Đã xảy ra lỗi: ${e.toString()}");
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> loadMore() async {
+    await fetchProducts(isLoadMore: true);
+  }
+
+  Future<void> onRefresh() async {
+    await fetchProducts();
+  }
+
+  void addToCart(Product product) {
+    HiveService.addToCart(product);
+    productList.refresh();
+  }
+
+  Future<void> navigateToCart() async {
+    final result = await Get.toNamed('/cart');
+    if (result != null && result == 'back') {
+      onRefresh();
+    }
   }
 
   void showLogoutConfirmationDialog() {
@@ -154,5 +114,20 @@ class HomeController extends GetxController {
         );
       },
     );
+  }
+
+  Future<void> addProductToCart(Product product) async {
+    Product? existingProduct = productList.firstWhereOrNull(
+      (p) => p.id == product.id,
+    );
+
+    if (existingProduct != null) return;
+
+    final listProductCart = await HiveService.getProducts();
+    listProductCart.add(product);
+
+    await HiveService.saveProducts(listProductCart);
+
+    fetchProducts();
   }
 }

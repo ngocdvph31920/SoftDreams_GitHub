@@ -47,7 +47,7 @@ class CartController extends GetxController {
   Future<void> fetchTotalPriceProduct() async {
     print("ngocdv tong tien $totalPrice");
     statusDelete.value = StatusDelete.initial;
-    final listProductCart = await hiveService.getProducts();
+    final listProductCart = await HiveService.getProducts();
 
     totalPrice.value =
         listProductCart.fold(0.0, (sum, product) => sum + product.price);

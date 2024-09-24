@@ -4,9 +4,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import '../controller/home_controller.dart';
 
-
 class HomeScreen extends GetView<HomeController> {
   const HomeScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,9 +33,8 @@ class HomeScreen extends GetView<HomeController> {
               Positioned(
                 top: 0,
                 right: 3,
-                child: Obx(() =>
-                    Text(
-                      '${controller.listProductsCart.length}',
+                child: Obx(() => Text(
+                      '${controller.productList.length}',
                       style: const TextStyle(
                         color: Colors.red,
                         fontWeight: FontWeight.w800,
@@ -48,18 +47,17 @@ class HomeScreen extends GetView<HomeController> {
           const SizedBox(width: 10),
         ],
       ),
-      body: Obx(() =>
-          Column(
+      body: Obx(() => Column(
             children: [
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: ListView.builder(
-                    itemCount: controller.listProducts.length,
+                    itemCount: controller.productList.length,
                     itemBuilder: (context, index) {
-                      final product = controller.listProducts[index];
-                      final isAdded = controller.listProductsCart
-                          .any((p) => p.id == product.id);
+                      final product = controller.productList[index];
+                      final isAdded =
+                          controller.productList.any((p) => p.id == product.id);
 
                       return Card(
                         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -70,9 +68,9 @@ class HomeScreen extends GetView<HomeController> {
                             child: CachedNetworkImage(
                               imageUrl: product.cover,
                               placeholder: (context, url) =>
-                              const CircularProgressIndicator(),
+                                  const CircularProgressIndicator(),
                               errorWidget: (context, url, error) =>
-                              const Icon(Icons.error),
+                                  const Icon(Icons.error),
                             ),
                           ),
                           title: Column(
@@ -110,22 +108,21 @@ class HomeScreen extends GetView<HomeController> {
                                 height: 30,
                                 child: isAdded
                                     ? const IconButton(
-                                  onPressed: null,
-                                  icon: Icon(
-                                    Icons.check,
-                                    color: Colors.black,
-                                  ),
-                                )
+                                        onPressed: null,
+                                        icon: Icon(
+                                          Icons.check,
+                                          color: Colors.black,
+                                        ),
+                                      )
                                     : ElevatedButton(
-                                  onPressed: () {
-                                    controller
-                                        .addProductToCart(product);
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    padding: EdgeInsets.zero,
-                                  ),
-                                  child: const Text('Add'),
-                                ),
+                                        onPressed: () {
+                                          controller.addProductToCart(product);
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                        child: const Text('Add'),
+                                      ),
                               ),
                             ],
                           ),
@@ -183,8 +180,7 @@ class HomeScreen extends GetView<HomeController> {
                         width: 100,
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: controller
-                              .showLogoutConfirmationDialog,
+                          onPressed: controller.showLogoutConfirmationDialog,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
                             shape: RoundedRectangleBorder(
@@ -211,4 +207,3 @@ class HomeScreen extends GetView<HomeController> {
     );
   }
 }
-

@@ -18,7 +18,7 @@ class HiveService {
     await _box.delete(_token);
   }
 
-   Future<void> addToCart(Product product) async {
+  static Future<void> addToCart(Product product) async {
     await cartBox.put(product.id, product);
   }
 
@@ -76,21 +76,21 @@ class HiveService {
     await _box.put(_passwordKey, password);
   }
 
-   bool get isLoggedIn {
+  static bool get isLoggedIn {
     return _box.get(_logInKey, defaultValue: false);
   }
 
-   Future<void> setLoggedIn(bool loggedIn) async {
+   static Future<void> setLoggedIn(bool loggedIn) async {
     await _box.put(_logInKey, loggedIn);
   }
 
-   Future<void> saveProducts(List<Product> products) async {
+   static Future<void> saveProducts(List<Product> products) async {
     var box = await Hive.openBox<Product>('productsBox');
     await box.clear();
     await box.addAll(products);
   }
 
-   Future<List<Product>> getProducts() async {
+   static Future<List<Product>> getProducts() async {
     var box = await Hive.openBox<Product>('productsBox');
     return box.values.toList();
   }

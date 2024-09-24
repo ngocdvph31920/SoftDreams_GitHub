@@ -58,7 +58,7 @@ class LoginController extends GetxController {
       final loginResponse = await loginRepo.login(loginRequest);
       if (loginResponse.success) {
 
-        await hiveService.setLoggedIn(true);
+        await HiveService.setLoggedIn(true);
         if (loginResponse.token != null) {
           await hiveService.saveToken(loginResponse.token!);
         }

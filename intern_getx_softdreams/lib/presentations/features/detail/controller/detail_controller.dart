@@ -1,176 +1,114 @@
-import 'dart:convert';
-import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:inter_test/model/product.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../../../service/hive_service_master.dart';
-import '../../../popup/loading_popup.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 
-enum DetailStatus {
-  initial,
-  inProcess,
-  success,
-  failure,
-}
+import '../../../../model/product.dart';
+import '../repository/detail_repo.dart';
 
 class DetailController extends GetxController {
-  var status = DetailStatus.initial.obs;
-  final Dio dio = Dio();
-  final HiveService hiveService = Get.find();
-
-  late Product product;
+  final DetailProductRepo detailProductRepo = Get.find();
+  final isLoading = false.obs;
+  var product = Rxn<Product>();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController coverUrlController = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+  final validateMode = AutovalidateMode.disabled.obs;
 
   @override
   void onInit() {
     super.onInit();
-
-    // Nhận đối tượng product từ arguments
-    product = Get.arguments as Product;
-
-    nameController.text = product.name;
-    priceController.text = product.price.toString();
-    quantityController.text = product.quantity.toString();
-    coverUrlController.text = product.cover;
-
-    ever(status, (DetailStatus status) {
-      if (status == DetailStatus.success) {
-        LoadingPopup.hideLoadingDialog(Get.context!);
-        Get.back();
-      } else if (status == DetailStatus.inProcess) {
-        LoadingPopup.showLoadingDialog(Get.context!);
-      } else if (status == DetailStatus.initial) {
-        LoadingPopup.hideLoadingDialog(Get.context!);
-        Get.back();
-      } else if (status == DetailStatus.failure) {
-        LoadingPopup.hideLoadingDialog(Get.context!);
-        ScaffoldMessenger.of(Get.context!).showSnackBar(
-          const SnackBar(
-            content: Text("Error server"),
-          ),
-        );
-        Get.back();
-      }
-    });
+    product.value = Get.arguments as Product;
+    fetchProducts();
   }
 
-  Future<void> createProduct({
-    required String name,
-    required int price,
-    required int quantity,
-    required String coverUrl,
-  }) async {
+  @override
+  void onClose() {
+    super.onClose();
+    nameController.dispose();
+    priceController.dispose();
+    quantityController.dispose();
+    coverUrlController.dispose();
+  }
+
+  Future<void> fetchProducts() async {
+    nameController.text = product.value?.name ?? '';
+    priceController.text = product.value?.price.toString() ?? '';
+    quantityController.text = product.value?.quantity.toString() ?? '';
+    coverUrlController.text = product.value?.cover ?? '';
+  }
+
+  Future<bool> deleteProduct(int productId) async {
     try {
-      status.value = DetailStatus.inProcess;
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final accessToken = prefs.getString("accessToken");
+      final response = await detailProductRepo.deleteProduct(productId);
 
-      final response = await dio.post(
-        'https://training-api-unrp.onrender.com/products',
-        data: {
-          'name': name,
-          'price': price,
-          'quantity': quantity,
-          'cover': coverUrl,
-        },
-        options: Options(
-          headers: {
-            'Authorization': '$accessToken',
-            'Content-Type': 'application/json',
-          },
-        ),
-      );
-
-      Map<String, dynamic> jsonMap = json.decode(response.toString());
-      bool success = jsonMap['success'];
-
-      if (success) {
-        status.value = DetailStatus.success;
+      if (response.success) {
+        Get.snackbar("Xóa Thành công", response.message);
+        return true;
       } else {
-        status.value = DetailStatus.failure;
+        Get.snackbar("Lỗi", response.message);
+        return false;
       }
-    } catch (e) {
-      status.value = DetailStatus.failure;
+    } catch (_) {
+      return false;
     }
   }
 
-  Future<void> deleteProduct(int productId) async {
+  Future<void> updateProduct() async {
+    final id = product.value?.id;
+    if (id == null) {
+      return;
+    }
+    validateMode.value = AutovalidateMode.always;
     try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final accessToken = prefs.getString("accessToken");
-
-      final response = await dio.delete(
-        'https://training-api-unrp.onrender.com/products/$productId',
-        options: Options(
-          headers: {
-            'Authorization': '$accessToken',
-            'Content-Type': 'application/json',
-          },
-        ),
+      final updatedProduct = Product(
+        id: id,
+        name: nameController.text,
+        price: int.tryParse(priceController.text) ?? 0,
+        quantity: int.tryParse(quantityController.text) ?? 0,
+        cover: coverUrlController.text,
       );
-
-      Map<String, dynamic> jsonMap = json.decode(response.toString());
-      bool success = jsonMap['success'];
-
-      if (success) {
-        status.value = DetailStatus.success;
+      final response = await detailProductRepo.updateProducts(updatedProduct);
+      print('NgocDV  update response $response');
+      if (response.success) {
+        Get.back(result: 'updated');
+        Get.snackbar("Thành công", "Sản phẩm đã được cập nhật");
       } else {
-        status.value = DetailStatus.failure;
+        Get.snackbar("Lỗi", response.message);
       }
     } catch (e) {
-      status.value = DetailStatus.failure;
+      print('NgocDV  update failure e = $e');
+    } finally {
+      isLoading.value = false;
     }
   }
 
-  Future<void> deleteProductFromList(Product product) async {
-    status.value = DetailStatus.inProcess;
-
-    hiveService.deleteProduct(product);
-    await deleteProduct(product.id);
-  }
-
-  Future<void> updateProduct({
-    required int productId,
-    required String name,
-    required int price,
-    required int quantity,
-    required String coverUrl,
-  }) async {
-    try {
-      status.value = DetailStatus.inProcess;
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final accessToken = prefs.getString("accessToken");
-
-      final response = await dio.put(
-        'https://training-api-unrp.onrender.com/products/$productId',
-        data: {
-          'name': name,
-          'price': price,
-          'quantity': quantity,
-          'cover': coverUrl,
-        },
-        options: Options(
-          headers: {
-            'Authorization': '$accessToken',
-            'Content-Type': 'application/json',
-          },
-        ),
+  Future<void> createProduct() async {
+    validateMode.value = AutovalidateMode.always;
+    if (formKey.currentState!.validate()) {
+      isLoading.value = true;
+      final newProduct = Product(
+        id: 0,
+        name: nameController.text,
+        price: int.tryParse(priceController.text) ?? 0,
+        quantity: int.tryParse(quantityController.text) ?? 0,
+        cover: coverUrlController.text,
       );
-
-      Map<String, dynamic> jsonMap = json.decode(response.toString());
-      bool success = jsonMap['success'];
-
-      if (success) {
-        status.value = DetailStatus.success;
-      } else {
-        status.value = DetailStatus.failure;
+      await Future.delayed(const Duration(microseconds: 100));
+      try {
+        final response = await detailProductRepo.createProduct(newProduct);
+        if (response.success) {
+          Get.back(result: 'create');
+          Get.snackbar("Thành công", "Sản phẩm đã được tạo mới");
+        } else {
+          Get.snackbar("Lỗi", response.message);
+        }
+      } catch (e) {
+      } finally {
+        isLoading.value = false;
       }
-    } catch (e) {
-      status.value = DetailStatus.failure;
     }
   }
 }

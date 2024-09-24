@@ -36,6 +36,14 @@ class Product extends HiveObject {
       cover: json['cover'],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "name": name,
+    "price": price,
+    "quantity": quantity,
+    "cover": cover,
+  };
 }
 
 
