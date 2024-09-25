@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../model/product.dart';
@@ -12,6 +11,7 @@ class HomeController extends GetxController {
   final isLoading = false.obs;
   final productList = <Product>[].obs;
   int currentPage = 1;
+  bool hasMoreProducts = true;
   final ScrollController scrollController = ScrollController();
 
   @override
@@ -24,19 +24,17 @@ class HomeController extends GetxController {
   @override
   void onClose() {
     scrollController.removeListener(_scrollListener);
+    scrollController.dispose();
     super.onClose();
   }
 
   void _scrollListener() {
     if (scrollController.position.pixels >=
-        scrollController.position.maxScrollExtent - 400) {
+        scrollController.position.maxScrollExtent - 200 &&
+        !isLoading.value &&
+        hasMoreProducts) {
       loadMore();
     }
-  }
-
-  Future<void> logout() async {
-    await HiveService.setLoggedIn(false);
-    Get.offAllNamed('/login');
   }
 
   Future<void> fetchProducts({bool isLoadMore = false}) async {
@@ -48,13 +46,18 @@ class HomeController extends GetxController {
         ListProductRequest(page: tempPage, limit: 10),
       );
 
-      if (response.success && response.data.isNotEmpty) {
+      if (response.success) {
         if (isLoadMore) {
-          productList.addAll(response.data);
-          currentPage = tempPage;
+          if (response.data.isNotEmpty) {
+            productList.addAll(response.data);
+            currentPage = tempPage;
+          } else {
+            hasMoreProducts = false;
+          }
         } else {
           productList.assignAll(response.data);
           currentPage = 1;
+          hasMoreProducts = response.data.isNotEmpty;
         }
       }
     } on DioException catch (e) {
@@ -71,6 +74,7 @@ class HomeController extends GetxController {
   }
 
   Future<void> onRefresh() async {
+    hasMoreProducts = true;
     await fetchProducts();
   }
 
@@ -86,39 +90,39 @@ class HomeController extends GetxController {
     }
   }
 
-  void showLogoutConfirmationDialog() {
-    final BuildContext? context = Get.context;
-    if (context == null) return;
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Đăng xuất'),
-          content: const Text('Bạn có chắc chắn muốn đăng xuất không?'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Hủy'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Đăng xuất'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                logout();
-              },
-            ),
-          ],
-        );
-      },
+  void showLogoutDialog() {
+    Get.defaultDialog(
+      title: 'Đăng xuất',
+      content: const Text('Bạn có chắc chắn muốn đăng xuất không?'),
+      confirm: ElevatedButton(
+        onPressed: () {
+          Get.back();
+          logout();
+        },
+        style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+        child: const Text('Đăng xuất'),
+      ),
+      cancel: TextButton(
+        onPressed: () {
+          Get.back();
+        },
+        child: const Text(
+          'Hủy',
+          style: TextStyle(color: Colors.black),
+        ),
+      ),
     );
+  }
+
+  Future<void> logout() async {
+    await HiveService.setLoggedIn(false);
+    Get.offAllNamed('/login');
   }
 
   Future<void> addProductToCart(Product product) async {
     Product? existingProduct = productList.firstWhereOrNull(
-      (p) => p.id == product.id,
+          (p) => p.id == product.id,
     );
 
     if (existingProduct != null) return;
