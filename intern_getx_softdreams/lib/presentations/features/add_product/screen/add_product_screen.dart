@@ -94,7 +94,7 @@ class AddProductScreen extends GetView<AddProductController> {
               Center(
                 child: ElevatedButton(
                   onPressed: () {
-                    controller.submitProduct();
+                    controller. createProduct();
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(

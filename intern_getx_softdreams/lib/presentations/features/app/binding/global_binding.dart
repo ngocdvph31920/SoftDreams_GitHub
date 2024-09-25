@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:inter_test/presentations/features/add_product/repository/add_product_repo.dart';
 import 'package:inter_test/service/hive_service_master.dart';
 
 import '../../../../service/api_service.dart';
@@ -15,5 +16,6 @@ class GlobalBinding extends Bindings {
     Get.lazyPut<LoginRepo>(() => LoginRepo(), fenix: true);
     Get.lazyPut<DetailProductRepo>(() => DetailProductRepo(), fenix: true);
     Get.lazyPut<ListProductRepo>(() => ListProductRepo(), fenix: true);
+    Get.lazyPut<AddProductRepo>(() => AddProductRepo(), fenix: true);
   }
 }
