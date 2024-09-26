@@ -1,6 +1,4 @@
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-
 import '../../../../service/api_service.dart';
 import '../model/list_product_request.dart';
 import '../model/list_product_response.dart';

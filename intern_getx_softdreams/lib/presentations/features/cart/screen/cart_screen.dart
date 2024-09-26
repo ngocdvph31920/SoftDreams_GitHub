@@ -20,9 +20,9 @@ class CartScreen extends GetView<CartController> {
           Expanded(
             child: Obx(() {
               return ListView.builder(
-                itemCount: controller.homeController.productList.length,
+                itemCount: controller.homeController.listProductCart.length,
                 itemBuilder: (context, index) {
-                  final product =  controller.homeController.productList[index];
+                  final product =  controller.homeController.listProductCart[index];
                   return Card(
                     margin:
                         const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
@@ -73,7 +73,16 @@ class CartScreen extends GetView<CartController> {
                           size: 30,
                         ),
                         onPressed: () {
-                          controller.removeProductInCart(product);
+                          Get.defaultDialog(
+                            title: 'Xác nhận',
+                            middleText: 'Bạn có muốn xóa sản phẩm này không?',
+                            textCancel: 'Hủy',
+                            textConfirm: 'Xóa',
+                            onConfirm: () {
+                              controller.removeFromCart(product.id);
+                              Get.back();
+                            },
+                          );
                         },
                       ),
                     ),

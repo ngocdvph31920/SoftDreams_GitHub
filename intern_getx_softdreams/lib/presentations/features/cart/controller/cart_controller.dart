@@ -1,5 +1,4 @@
 import 'package:get/get.dart';
-import 'package:inter_test/model/product.dart';
 import 'package:inter_test/presentations/popup/loading_popup.dart';
 import 'package:inter_test/presentations/features/home/controller/home_controller.dart';
 import 'package:inter_test/service/hive_service_master.dart';
@@ -38,14 +37,13 @@ class CartController extends GetxController {
     });
   }
 
-  Future<void> removeProductInCart(Product product) async {
-    statusDelete.value = StatusDelete.inProcess;
-    await hiveService.deleteProduct(product);
-    statusDelete.value = StatusDelete.deleteSuccess;
+  void removeFromCart(int productId) async {
+    await HiveService.deleteItem(productId);
+    fetchTotalPriceProduct();
+    homeController.fetchListProductCart();
   }
 
   Future<void> fetchTotalPriceProduct() async {
-    print("ngocdv tong tien $totalPrice");
     statusDelete.value = StatusDelete.initial;
     final listProductCart = await HiveService.getProducts();
 

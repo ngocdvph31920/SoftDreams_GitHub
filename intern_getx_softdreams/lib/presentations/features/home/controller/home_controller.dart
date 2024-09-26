@@ -10,6 +10,7 @@ class HomeController extends GetxController {
   final ListProductRepo homeRepo = Get.find();
   final isLoading = false.obs;
   final productList = <Product>[].obs;
+  final listProductCart = <Product>[].obs;
   int currentPage = 1;
   bool hasMoreProducts = true;
   final ScrollController scrollController = ScrollController();
@@ -28,9 +29,13 @@ class HomeController extends GetxController {
     super.onClose();
   }
 
+  void fetchListProductCart() {
+    listProductCart.value = HiveService.getCartItem();
+  }
+
   void _scrollListener() {
     if (scrollController.position.pixels >=
-        scrollController.position.maxScrollExtent - 200 &&
+            scrollController.position.maxScrollExtent - 200 &&
         !isLoading.value &&
         hasMoreProducts) {
       loadMore();
@@ -80,7 +85,8 @@ class HomeController extends GetxController {
 
   void addToCart(Product product) {
     HiveService.addToCart(product);
-    productList.refresh();
+    listProductCart.refresh();
+    fetchListProductCart();
   }
 
   Future<void> navigateToCart() async {
@@ -89,7 +95,6 @@ class HomeController extends GetxController {
       onRefresh();
     }
   }
-
 
   void showLogoutDialog() {
     Get.defaultDialog(
@@ -120,18 +125,18 @@ class HomeController extends GetxController {
     Get.offAllNamed('/login');
   }
 
-  Future<void> addProductToCart(Product product) async {
-    Product? existingProduct = productList.firstWhereOrNull(
-          (p) => p.id == product.id,
-    );
-
-    if (existingProduct != null) return;
-
-    final listProductCart = await HiveService.getProducts();
-    listProductCart.add(product);
-
-    await HiveService.saveProducts(listProductCart);
-
-    fetchProducts();
-  }
+// Future<void> addProductToCart(Product product) async {
+//   Product? existingProduct = productList.firstWhereOrNull(
+//         (p) => p.id == product.id,
+//   );
+//
+//   if (existingProduct != null) return;
+//
+//   final listProductCart = await HiveService.getProducts();
+//   listProductCart.add(product);
+//
+//   await HiveService.saveProducts(listProductCart);
+//
+//   fetchProducts();
+// }
 }

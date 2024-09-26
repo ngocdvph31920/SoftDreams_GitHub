@@ -15,7 +15,7 @@ enum StatusLogin {
 }
 
 class LoginController extends GetxController {
-  bool obscureText = true;
+  RxBool obscureText = true.obs;
   final taxController = TextEditingController();
   final accountController = TextEditingController();
   final passwordController = TextEditingController();
@@ -27,6 +27,10 @@ class LoginController extends GetxController {
   var statusLogin = StatusLogin.initial.obs;
   final LoginRepo loginRepo = Get.find();
   final HiveService hiveService = Get.find();
+
+  void toggleObscureText() {
+    obscureText.value = !obscureText.value;
+  }
 
   Future<void> authentication() async {
     statusLogin.value = StatusLogin.inProcess;
@@ -57,7 +61,6 @@ class LoginController extends GetxController {
       statusLogin.value = StatusLogin.inProcess;
       final loginResponse = await loginRepo.login(loginRequest);
       if (loginResponse.success) {
-
         await HiveService.setLoggedIn(true);
         if (loginResponse.token != null) {
           await hiveService.saveToken(loginResponse.token!);
