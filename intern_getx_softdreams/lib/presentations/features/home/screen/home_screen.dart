@@ -34,7 +34,7 @@ class HomeScreen extends GetView<HomeController> {
                 top: 0,
                 right: 3,
                 child: Obx(() => Text(
-                      '${controller.productList.length}',
+                      '${controller.listProductCart.length}',
                       style: const TextStyle(
                         color: Colors.red,
                         fontWeight: FontWeight.w800,

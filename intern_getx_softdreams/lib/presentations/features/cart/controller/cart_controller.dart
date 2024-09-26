@@ -39,16 +39,15 @@ class CartController extends GetxController {
 
   void removeFromCart(int productId) async {
     await HiveService.deleteItem(productId);
-    fetchTotalPriceProduct();
     homeController.fetchListProductCart();
+    fetchTotalPriceProduct();
   }
 
   Future<void> fetchTotalPriceProduct() async {
     statusDelete.value = StatusDelete.initial;
-    final listProductCart = await HiveService.getProducts();
 
-    totalPrice.value =
-        listProductCart.fold(0.0, (sum, product) => sum + product.price);
+    totalPrice.value = homeController.listProductCart
+        .fold(0.0, (sum, product) => sum + product.price);
     totalPrice.value = double.parse(totalPrice.toStringAsFixed(2));
   }
 }

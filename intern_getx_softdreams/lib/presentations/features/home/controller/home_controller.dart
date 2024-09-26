@@ -19,6 +19,7 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
     fetchProducts();
+    fetchListProductCart();
     scrollController.addListener(_scrollListener);
   }
 
@@ -85,7 +86,7 @@ class HomeController extends GetxController {
 
   void addToCart(Product product) {
     HiveService.addToCart(product);
-    listProductCart.refresh();
+    fetchProducts();
     fetchListProductCart();
   }
 
